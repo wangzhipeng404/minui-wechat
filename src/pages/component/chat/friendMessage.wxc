@@ -1,0 +1,97 @@
+<template>
+  <view class="list-check">
+    <image
+      class="list-image"
+      mode="aspectFill"
+      src="http://s3.mogucdn.com/mlcdn/1689c6/180330_8gak8gf7809jhfi8i0l90i79bca3g_400x400.jpg"
+      >
+    </image>
+    <view class="item">
+      <view class="msg-icon"></view>
+      <view class="msg-content">
+      <text>{{title}}</text>
+      </view>
+    </view>
+    </wxc-list>
+  </view>
+</template>
+
+<script>
+export default {
+  config: {
+    usingComponents: {
+      'wxc-list': '@minui/wxc-list',
+      'wxc-flex': '@minui/wxc-flex',
+    }
+  },
+  properties: {
+    title: {
+      value: '昵称',
+      type: 'string',
+    },
+    detail: {
+      value: null,
+      type: 'string',
+    },
+    arrow: {
+      value: false,
+      type: 'boolean',
+    },
+  }
+}
+</script>
+
+<style>
+.list-check {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  padding: 20rpx;
+}
+.check-wrap {
+  position: relative;
+  width: 40rpx;
+  height: 40rpx;
+  margin-left: 30rpx;
+  border-radius: 100%;
+  border: 1px solid #d8d8d8;
+}
+.check {
+  position: absolute;
+  top: 0;
+  left: -2rpx;
+  width: 100%;
+  height: 100%;
+  line-height: 42rpx;
+}
+.list-image {
+  width: 80rpx;
+  height: 80rpx;
+  margin-right: 10rpx;
+}
+.radius {
+  border-radius: 100px;
+}
+.item {
+  flex: 1;
+  position: relative;
+}
+.msg-content {
+  display: inline-block;
+  border: 1px solid #e8e8e8;
+  max-width: 50%;
+  padding: 10rpx 15rpx;
+  border-radius: 10rpx;
+  background-color: #e8e8e8;
+}
+.msg-icon {
+  width: 15rpx;
+  height: 15rpx;
+  display: inline-block;
+  border-top: 1px solid #e8e8e8;
+  border-left: 1px solid #e8e8e8;
+  transform: rotate(-45deg);
+  margin-right: -10rpx;
+  background-color: #e8e8e8;
+}
+</style>

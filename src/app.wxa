@@ -1,0 +1,70 @@
+<template>
+  <view>
+    <!-- wxp template -->
+    <page></page>
+  </view>
+</template>
+
+<script>
+  export default {
+    config: {
+      usingComponents: {
+        'layout-head': 'layout/head',
+      },
+      pages: [],
+      window: {
+        backgroundTextStyle: 'dark',
+        backgroundColor: '#ffffff',
+        navigationBarBackgroundColor: '#ffffff',
+        navigationBarTitleText: 'minui-demo',
+        navigationBarTextStyle: 'black'
+      },
+      tabBar: {
+        selectedColor: '#00ff00',
+        color: '#777',
+        list: [
+          {
+            pagePath: 'pages/home/index',
+            iconPath: './common/icon/chat-gray.png',
+            selectedIconPath: './common/icon/chat.png',
+            text: '首页'
+          },
+          {
+            pagePath: 'pages/friend/index',
+            iconPath: './common/icon/chat-gray.png',
+            selectedIconPath: './common/icon/chat.png',
+            text: '通讯录'
+          },
+          {
+            pagePath: 'pages/discovery/index',
+            iconPath: './common/icon/chat-gray.png',
+            selectedIconPath: './common/icon/chat.png',
+            text: '发现'
+          },
+          {
+            pagePath: 'pages/self/index',
+            iconPath: './common/icon/chat-gray.png',
+            selectedIconPath: './common/icon/chat.png',
+            text: '我'
+          },
+        ]
+      },
+      networkTimeout: {
+        request: 10000
+      }
+    },
+    globalData: { },
+    onLaunch () { },
+    onShow () { },
+    onHide () { }
+  }
+</script>
+
+<style>
+page {
+  background-color: #ffffff;
+  height: 100%;
+  font-size: 32rpx;
+  line-height: 1.5;
+}
+</style>

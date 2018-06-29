@@ -1,0 +1,118 @@
+<template>
+  <view class="list-wrap">
+    <view class="list-item">
+      <wxc-list
+        class="item"
+        icon="help"
+        icon-color="#69A0DD"
+        title="朋友圈"></wxc-list>
+    </view>
+
+    <view class="list-item">
+      <wxc-list
+        class="item"
+        icon="help"
+        icon-color="#69A0DD"
+        title="扫一扫"></wxc-list>
+      <wxc-list
+        class="item"
+        icon="feedback"
+        icon-color="#69A0DD"
+        mode="none"
+        title="摇一摇"></wxc-list>
+    </view>
+
+    <view class="list-item">
+      <wxc-list
+        class="item"
+        icon="help"
+        icon-color="#69A0DD"
+        title="看一看"></wxc-list>
+      <wxc-list
+        class="item"
+        icon="feedback"
+        icon-color="#69A0DD"
+        mode="none"
+        title="搜一搜"></wxc-list>
+    </view>
+
+    <view class="list-item">
+      <wxc-list
+        class="item"
+        icon="help"
+        icon-color="#69A0DD"
+        title="附近的人"></wxc-list>
+      <wxc-list
+        class="item"
+        icon="feedback"
+        icon-color="#69A0DD"
+        mode="none"
+        title="漂流瓶"></wxc-list>
+    </view>
+
+    <view class="list-item">
+      <wxc-list
+        class="item"
+        icon="help"
+        icon-color="#69A0DD"
+        title="购物"></wxc-list>
+      <wxc-list
+        class="item"
+        icon="feedback"
+        icon-color="#69A0DD"
+        mode="none"
+        title="游戏"></wxc-list>
+    </view>
+
+     <view class="list-item">
+      <wxc-list
+        class="item"
+        icon="feedback"
+        icon-color="#69A0DD"
+        mode="none"
+        title="小程序"></wxc-list>
+    </view>
+  </view>
+</template>
+
+<script>
+export default {
+  config: {
+    navigationBarTitleText: '发现',
+    usingComponents: {
+      'wxc-list': '@minui/wxc-list',
+      'wxc-icon': '@minui/wxc-icon'
+    }
+  },
+  data: {
+  },
+}
+</script>
+
+<style>
+  .list-wrap {
+    width: 100%;
+    background: #efefef;
+    padding-bottom: 30rpx;
+    padding-top: 30rpx;
+  }
+  .list-item {
+    background: #fff;
+    margin-bottom: 30rpx;
+  }
+  .list-item:last-child {
+    margin: 0;
+  }
+  .item {
+    flex: 1;
+  }
+  .desc-highlight {
+    font-size: 24rpx;
+    height: 38rpx;
+    padding: 0 22rpx;
+    border: 1px solid #f5342f;
+    border-radius: 20rpx;
+    color: #f5342f;
+    line-height: 38rpx;
+  }
+</style>

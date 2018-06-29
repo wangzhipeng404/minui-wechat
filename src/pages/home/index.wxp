@@ -1,0 +1,35 @@
+<template>
+  <view>
+    <navigator
+      wx:for="{{arr}}"
+      wx:key="index"
+      url="/pages/chat/index"
+      hover-class="navigator-hover"
+    >
+      <list-item
+      title="昵称"
+      detail="聊天内容聊天内容"
+      >
+      </list-item>
+    </navigator>
+  </view>
+
+</template>
+
+<script>
+export default {
+  config: {
+    navigationBarTitleText: '微信',
+    usingComponents: {
+      'list-item': '../component/chat/listItem'
+    }
+  },
+  data: {
+    arr: new Array(15)
+  }
+}
+</script>
+
+<style>
+
+</style>
