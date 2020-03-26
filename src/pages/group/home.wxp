@@ -1,0 +1,360 @@
+<template>
+  <view class="main-container">
+    <view class="group-info">
+      <wxc-cc>
+        <view class="info-wrap">
+          <wxc-avatar class="group-avatar" src={{group.avatarUrl}} bindtap="handleEdit"></wxc-avatar>
+          <view class="group-nickname">{{group.nickName}}</view>
+          <view class="group-intro">{{group.intro}}</view>
+          <view class="group-menber">当前共{{group.members.length}}人</view>
+          <view class="btn-wrap" wx:if="{{isMember}}">
+            <view>
+              <navigator url="/pages/group/chat?id={{group._id}}&nickName={{group.nickName}}" >
+                <view class="btn">进入聊天</view>
+              </navigator>
+            </view>
+            <view >
+              <view class="btn" >
+                <button open-type="share" class="share-btn">邀请好友</button>
+              </view>
+            </view>
+          </view>
+          <view wx:else class="btn-wrap">
+            <view bindtap="handleJoinGroup"><view class="btn">加入圈子</view></view>
+          </view>
+        <view>
+      </wxc-cc>
+    <view>
+    <view class="menu-list">
+      <view class="menu-item" bindtap="handleGoList">
+        <wxc-icon size="28" type="arrow-left" color="#000"></wxc-icon>
+        我的圈子
+      </view>
+      <view class="menu-item" bindtap="handleGoMembers">
+        成员列表
+        <wxc-icon size="28" type="arrow-right" color="#000"></wxc-icon>
+      </view>
+    </view>
+    <view class="moment-list">
+      <wxc-panel title="动态">
+          <view wx:for="{{moments}}" wx:for-index="mindex" wx:key="{{mindex}}">
+            <moment-item moment="{{item}}" momentIndex="{{mindex}}"></moment-item>
+          </view>
+          <wxc-loadmore is-end="{{momentAll}}" icon="{{true}}"></wxc-loadmore>
+      </wxc-panel>
+    </view>
+    <view class="new-btn" bindtap="handleNewPost" animation="{{animation}}" wx:if="{{isMember}}">
+      <wxc-icon size="50" type="camera" class="new-icon" color="#fff"></wxc-icon>
+    </view>
+    <login-modal bind:login="handleLoginSuccess" wx:if="{{unlogin}}"></login-modal>
+    <wxc-loading
+      is-show="{{infoLoading}}"
+      image="https://s10.mogucdn.com/mlcdn/c45406/170607_5241335cb37ka3ab7781ddh504ggh_200x200.png"
+      slip="http://s10.mogucdn.com/p1/160715/upload_ifrgmmzwmyydknldhezdambqmeyde_200x200.png"
+    ></wxc-loading>
+  </view>
+</template>
+
+<script>
+export default {
+  config: {
+    navigationBarTitleText: '圈子主页',
+    enablePullDownRefresh: true,
+    usingComponents: {
+      'wxc-cc': '@minui/wxc-cc',
+      'wxc-panel': '@minui/wxc-panel',
+      'wxc-icon': '@minui/wxc-icon',
+      'wxc-button': '@minui/wxc-button',
+      'wxc-loading': '@minui/wxc-loading',
+      'wxc-loadmore': '@minui/wxc-loadmore',
+      'wxc-avatar': '@minui/wxc-avatar',
+      'moment-item': '../component/timeLine/momentItem.wxc',
+      'img-viewer': '../component/timeLine/imgViewer.wxc',
+      'login-modal': '../component/login/login.wxc',
+    }
+  },
+  data: {
+    infoLoading: false,
+    momentAll: false,
+    momentLoading: false,
+    group: {},
+    isMember: false,
+    moments: [],
+    animation: {},
+    unlogin: false,
+    page: 1,
+    option: {},
+    lastId: null,
+  },
+  onLoad (option) {
+    const app = getApp()
+    this.setData({
+      option,
+    }, () => {
+      if (!app.globalData.store.user.nickName) {
+        this.setData({
+          unlogin: true,
+          infoLoading: false,
+        })
+      } else {
+        this.handleLoaded()
+      }
+    })
+
+  },
+  onShow () {
+    var animation = wx.createAnimation({
+      transformOrigin: "50% 50%",
+      duration: 1500,
+      timingFunction: "linear",
+      delay: 0,
+    })
+    animation.bottom('-150rpx').right('-150rpx').step();
+    this.setData({
+      animation: animation.export(),
+    })
+    const app = getApp()
+    if (app.globalData.store.postMoment) {
+      wx.startPullDownRefresh()
+      app.globalData.store.postMoment = false
+    }
+  },
+  onShareAppMessage: function (res) {
+    if (res.from === 'button') {
+      console.log(res.target)
+    }
+    const user = getApp().globalData.store.user
+    return {
+      title: `${user.nickName}邀请你加入圈子${this.data.group.nickName}`,
+      path: `/pages/group/home?id=${this.data.group._id}`
+    }
+  },
+  onPullDownRefresh () {
+    this.setData({
+      lastId: null,
+      moments: [],
+      momentAll: false,
+    }, () => {
+      this.handleLoadMoment()
+    })
+  },
+  onReachBottom () {
+    if (!this.data.momentAll) {
+      this.handleLoadMoment()
+    }
+  },
+  handleLoaded () {
+    const app = getApp()
+    const currentGroup = app.globalData.store.currentGroup;
+    if (!currentGroup._id || currentGroup._id !== this.data.option.id) {
+      this.setData({
+        infoLoading: true,
+      })
+      const db = wx.cloud.database()
+      db.collection('groop').doc(this.data.option.id).get().then(res => {
+        console.log(res)
+        const { data } = res
+        app.globalData.store.currentGroup = { ...data }
+        this.setData({
+          group: { ...data },
+          isMember: data.members.indexOf(app.globalData.store.user._id) > -1,
+          infoLoading: false,
+        })
+      })
+    } else {
+      this.setData({
+        group: { ...currentGroup },
+        isMember: currentGroup.members.indexOf(app.globalData.store.user._id) > -1,
+        infoLoading: false,
+      })
+      app.globalData.store.shareJump = false
+    }
+    wx.startPullDownRefresh()
+  },
+  handleLoginSuccess () {
+    this.handleLoaded()
+  },
+  handleLoadMoment () {
+    if (this.data.momentLoading) {
+      return
+    }
+    this.setData({
+      momentLoading: true,
+    })
+    const db = wx.cloud.database()
+    const _ = db.command
+    let query = {
+      group: {
+        _id: this.data.option.id
+      },
+    }
+    if (this.data.lastId) {
+      query._id = _.lt(this.data.lastId)
+    }
+    db.collection('moment').where({
+      ...query,
+    }).orderBy('_id', 'desc').limit(20).get().then(res => {
+      let newLastId = null
+      const now = new Date()
+      const data = res.data.map(val => {
+        const second = (now - new Date(val.create_time)) / 1000
+        const day = Math.floor(second / 86400 )
+        const hour = Math.floor(second / 3600 )
+        const min = Math.floor(second / 60)
+        val.before = day > 0 ? (day + '天') : ( hour > 0 ? (hour + '小时') : (min + '分钟'))
+        newLastId = val._id
+        return val
+      })
+
+      this.setData({
+        moments:  [...this.data.moments, ...data],
+        momentAll: data.length < 20,
+        lastId: newLastId,
+        momentLoading: false,
+      })
+      wx.stopPullDownRefresh()
+    })
+  },
+  handleNewPost () {
+    wx.navigateTo({
+      url: `/pages/timeLine/new?id=${this.data.group._id}&nickName=${this.data.group.nickName}`
+    })
+  },
+  handleJoinGroup () {
+    const app = getApp()
+    wx.showLoading({
+      title: '正在加入',
+    })
+    wx.cloud.callFunction({
+      name: 'groopJoin',
+      data: {
+        user_id: app.globalData.store.user._id,
+        groop_id: this.data.option.id,
+      }
+    }).then(res => {
+      wx.hideLoading()
+      wx.showToast({
+        title: '加入成功',
+        icon: 'none',
+      })
+      this.setData({
+        isMember: true,
+        group: {
+          ...this.data.group,
+          members: [...this.data.group.members, app.globalData.store.user._id]
+        }
+      })
+    })
+  },
+  handleEdit () {
+    if (getApp().globalData.store.user._id === this.data.group.creator) {
+      wx.navigateTo({
+        url: `/pages/group/new?id=${this.data.group._id}`
+      })
+    }
+  },
+  handleGoList () {
+    wx.switchTab({
+      url: '/pages/group/index'
+    })
+  },
+  handleGoMembers () {
+    wx.navigateTo({
+      url: '/pages/group/members'
+    })
+  },
+}
+</script>
+
+<style lang="less">
+  .main-container {
+    .group-info {
+      .info-wrap {
+        box-sizing: border-box;
+        width: 100%;
+        padding: 30rpx 50rpx;
+        text-align: center;
+        .group-avatar {
+          display: inline-block;
+          width: 120rpx;
+          height: 120rpx;
+          border-radius: 100%;
+        }
+        .group-nickname, {
+          font-size: 32rpx;
+          color: rgb(54, 5, 5);
+          margin-top: 10rpx;
+          font-weight: 600;
+        }
+        .group-intro {
+          margin-top: 20rpx;
+          font-size: 28rpx;
+          color: #262626;
+        }
+        .group-menber {
+          margin-top: 20rpx;
+          font-size: 28rpx;
+          color: #595959;
+        }
+        .btn-wrap {
+          margin-top: 40rpx;
+          &>view {
+            box-sizing: border-box;
+            display: inline-block;
+            width: 50%;
+            color: #52c41a;
+            .btn {
+              padding: 10rpx 0;
+              .share-btn {
+                font-size: inherit;
+                line-height: inherit;
+                color: inherit;
+                border: none;
+                background: none;
+                padding: 0;
+                margin: 0;
+                display: inline;
+                border-color: transparent;
+                &::after{
+                  border: none;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    .menu-list {
+      display: flex;
+      justify-content: space-between;
+      border-top: 20rpx solid #e8e8e8;
+      .menu-item {
+        width: 25%;
+        text-align: center;
+        padding: 20rpx 0;
+      }
+    }
+    .moment-list {
+      border-top: 20rpx solid #e8e8e8;
+      .scroll-view {
+        height: 600rpx;
+      }
+    }
+    .new-btn {
+      display: block;
+      position: fixed;
+      bottom: -300rpx;
+      right: -300rpx;
+      background-color: #13c2c2;
+      height: 300rpx;
+      width: 300rpx;
+      border-radius: 100%;
+      .new-icon {
+        color: #fff;
+        position: absolute;
+        top: 55rpx;
+        left: 65rpx;
+      }
+    }
+  }
+</style>

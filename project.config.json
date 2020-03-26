@@ -1,16 +1,64 @@
 {
-  "miniprogramRoot": "dist",
+	"miniprogramRoot": "dist/",
+	"cloudfunctionRoot": "cloud/",
 	"description": "项目配置文件。",
 	"compileType": "miniprogram",
-	"libVersion": "1.9.1",
-	"appid": "wxfa96f66a674e501a",
+	"libVersion": "2.10.3",
+	"appid": "wx1300c5551a5bbf49",
 	"projectname": "minui-demo",
-  "setting": {
+	"setting": {
 		"urlCheck": true,
 		"es6": false,
 		"postcss": true,
 		"minified": true,
-		"newFeature": true
+		"newFeature": true,
+		"coverView": true,
+		"autoAudits": false,
+		"showShadowRootInWxmlPanel": true,
+		"scopeDataCheck": false,
+		"checkInvalidKey": true,
+		"checkSiteMap": true,
+		"uploadWithSourceMap": true,
+		"babelSetting": {
+			"ignore": [],
+			"disablePlugins": [],
+			"outputPath": ""
+		}
 	},
-	"condition": {}
+	"simulatorType": "wechat",
+	"simulatorPluginLibVersion": {},
+	"cloudfunctionTemplateRoot": "cloudfunctionTemplate",
+	"condition": {
+		"search": {
+			"current": -1,
+			"list": []
+		},
+		"conversation": {
+			"current": -1,
+			"list": []
+		},
+		"plugin": {
+			"current": -1,
+			"list": []
+		},
+		"game": {
+			"list": []
+		},
+		"gamePlugin": {
+			"current": -1,
+			"list": []
+		},
+		"miniprogram": {
+			"current": -1,
+			"list": [
+				{
+					"id": 0,
+					"name": "分享进入",
+					"pathName": "pages/group/home",
+					"query": "id=1584005060497_0.013593596248922757_16790098",
+					"scene": 1007
+				}
+			]
+		}
+	}
 }

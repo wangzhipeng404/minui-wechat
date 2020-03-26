@@ -1,0 +1,137 @@
+<template>
+  <view class="main-container">
+    <view wx:for="{{moments}}" wx:for-item="item" wx:key="{{item._id}}">
+      <moment-item
+        moment="{{item}}"
+        momentIndex="{{index}}"
+        bind:clickImage="handlePreviewImg"
+        data-index="{{index}}"
+        page="list"
+      ></moment-item>
+    </view>
+    <wxc-abnor
+      type="FOLLOW"
+      title="还没有动态"
+      tip="赶快去加入圈子发动态吧"
+      wx:if="{{isAll && moments.length === 0}}"
+    ></wxc-abnor>
+    <wxc-loadmore
+      is-end="{{isAll}}"
+      icon="{{true}}"
+    ></wxc-loadmore>
+  </view>
+</template>
+
+<script>
+
+export default {
+  config: {
+    navigationBarTitleText: '所有动态',
+    enablePullDownRefresh: true,
+    usingComponents: {
+      'wxc-flex': '@minui/wxc-flex',
+      'wxc-loadmore': '@minui/wxc-loadmore',
+      'moment-item': '../component/timeLine/momentItem.wxc',
+      'img-viewer': '../component/timeLine/imgViewer.wxc',
+      'wxc-abnor': '@minui/wxc-abnor',
+    }
+  },
+  data: {
+    isAll: false,
+    loading: false,
+    moments: [],
+    page: 1,
+    lastId: null,
+    isLoad: false,
+    previewImg: false,
+  },
+  onLoad () {
+    wx.getSystemInfo({
+      success: res => {
+        this.setData({
+          windowHeight: res.windowHeight,
+          windowWidth: res.windowWidth,
+        })
+      }
+    })
+    this.handleLoadData()
+  },
+  onShow() {
+    if (this.data.isLoad && !this.data.previewImg) {
+      wx.startPullDownRefresh()
+    }
+    this.setData({
+      previewImg: false,
+    })
+  },
+  onPullDownRefresh () {
+    const that = this
+    this.setData({
+      lastId: null,
+      moments: [],
+      momentAll: false,
+      isLoad: false,
+    }, () => {
+      that.handleLoadData()
+    })
+  },
+  onReachBottom () {
+    if (!this.data.isAll) {
+      this.handleLoadData()
+    }
+  },
+  handleLoadData (type) {
+    if (this.data.loading) {
+      return
+    }
+    this.setData({
+      loading: true,
+    })
+    const db = wx.cloud.database()
+    const _ = db.command
+    let query = {
+      group: {
+        _id: _.in(getApp().globalData.store.group_ids),
+      }
+    }
+    if (this.data.lastId) {
+      query._id = _.lt(this.data.lastId)
+    }
+    db.collection('moment').where({
+      ...query,
+    }).orderBy('_id', 'desc').limit(20).get().then(res => {
+      let newLastId = null
+      const now = new Date()
+      const data = res.data.map(val => {
+        const second = (now - new Date(val.create_time)) / 1000
+        const day = Math.floor(second / 86400 )
+        const hour = Math.floor(second / 3600 )
+        const min = Math.floor(second / 60)
+        val.before = day > 0 ? (day + '天') : ( hour > 0 ? (hour + '小时') : (min + '分钟'))
+        newLastId = val._id
+        return val
+      })
+
+      this.setData({
+        moments:  [...this.data.moments, ...data],
+        isAll: data.length < 20,
+        lastId: newLastId,
+        loading: false,
+        isLoad: false,
+      })
+      wx.stopPullDownRefresh()
+    })
+  },
+  handlePreviewImg () {
+    this.setData({
+      previewImg: true,
+    })
+  }
+}
+</script>
+
+<style lang="less">
+  .main-container {
+    padding-bottom: 20rpx;
+  }
+</style>

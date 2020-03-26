@@ -1,0 +1,179 @@
+<template>
+  <view class="main-container" animation="{{animation}}">
+    <view class="main-content">
+      <view class="logo">
+        <text>gro</text>
+        <wxc-icon size="80" type="message" color="#fa541c"></wxc-icon>
+        <text>p</text>
+      </view>
+      <view class="btn-wrap">
+        <wxc-button
+          plain="true"
+          size="normal"
+          type="success"
+          value="进入圈子"
+          loading="{{loading}}"
+          open-type="getUserInfo"
+          bindgetuserinfo="getUserInfo"
+          btn-style="border-width: 2rpx"
+        >
+        </wxc-button>
+      </view>
+    </view>
+  </view>
+</template>
+
+<script>
+
+export default {
+  config: {
+    usingComponents: {
+      'wxc-button': '@minui/wxc-button',
+      'wxc-icon': '@minui/wxc-icon',
+      'wxc-cc': '@minui/wxc-cc',
+      'wxc-loading': '@minui/wxc-loading',
+    }
+  },
+  data: {
+    loading: true,
+    openid: '',
+    _id: null,
+    animation: {},
+    iconAnimation: {},
+  },
+  ready() {
+    this.wxLogin()
+  },
+  methods: {
+    loginSuccess () {
+      const app = getApp()
+      var animation = wx.createAnimation({
+        transformOrigin: "50% 50%",
+        duration: 1000,
+        timingFunction: "linear",
+      })
+      animation.height(0).step();
+      this.setData({
+        animation: animation.export(),
+      }, () => {
+        /* if (!app.groupSocket) {
+          const groupSocket = io(util.server + '/group', {
+            query: {
+              cookie: encodeURI(app.globalData.store.cookie),
+            }
+          })
+          groupSocket.on('connect', () => {
+            console.log('conn')
+          })
+          wx.onSocketOpen(function(res) {
+            console.log('WebSocket连接已打开！')
+          })
+          wx.onSocketError(e => {
+            console.log(e)
+            groupSocket.close()
+            app.groupSocket = null
+          })
+          app.groupSocket = groupSocket
+        }
+        */
+        this.triggerEvent('login')
+      })
+    },
+    wxLogin () {
+      let app = getApp();
+      wx.cloud.callFunction({
+        name: 'login',
+      }).then(res => {
+        this.setData({
+          loading: false,
+          openid: res.result.openid,
+          _id: res.result._id,
+        })
+        // const sess = res.header['Set-Cookie'].match(/koa:sess=[^;]*;/)
+        // const sig = res.header['Set-Cookie'].match(/koa:sess.sig=[^;]*;/)
+        // app.globalData.store.cookie = `${sess[0]} ${sig[0]}`
+        app.globalData.store.cookie = 'sess sig'
+        if (res.result.nickName) {
+          app.globalData.store.user = { ...res.result }
+          this.loginSuccess()
+        }
+      }).catch(console.log)
+    },
+    getUserInfo (e) {
+      if(e.detail.errMsg === 'getUserInfo:ok') {
+        if (this.data.loading) {
+          return
+        }
+        this.setData({
+          loading: true,
+        })
+        let userInfo = e.detail.userInfo
+        wx.cloud.callFunction({
+        name: 'userUpdate',
+        data: {
+          data: {
+            ...userInfo,
+          }
+        }
+      }).then(res => {
+          const app = getApp()
+          app.globalData.store.user = {
+            ...app.globalData.store.user,
+            ...userInfo,
+            _id: this.data._id,
+            openid: this.data.openid,
+          }
+          this.loginSuccess()
+        })
+        /* request({
+          url: '/api/user/update',
+          data: userInfo,
+          cookie: getApp().globalData.store.cookie,
+        }).then(res => {
+          const app = getApp();
+          app.globalData.store.user = res.data
+          this.loginSuccess()
+        }) */
+      }
+    }
+  }
+}
+</script>
+
+<style lang="less">
+.main-container {
+  height: 100%;
+  width: 100%;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 9999;
+  background: #f5f5f5;
+  overflow: hidden;
+  .main-content {
+    position: static;
+    text-align: center;
+    margin-top: 20%;
+    .logo {
+      display: inline-block;
+      background-color: #13c2c2;
+      font-size: 60rpx;
+      color: #fff;
+      width: 300rpx;
+      height: 300rpx;
+      line-height: 300rpx;
+      text-align: center;
+      border-radius: 100%;
+      wxc-icon {
+        margin-left: 10rpx;
+        margin-right: 6rpx;
+      }
+    }
+    .btn-wrap {
+      display: block;
+      margin-top: 100rpx;
+      text-align: center;
+    }
+  }
+}
+</style>

@@ -1,0 +1,240 @@
+<template>
+  <view class="main-container">
+    <view class="group-avatar-container">
+      <wxc-cc class="group-avatar-content" bindtap="onUploadImg">
+        <image src="{{avatarUrl}}" class="group-avatar" mode="scaleToFill" />
+      </wxc-cc>
+    </view>
+    <view class="group-name">
+      <wxc-input
+        type="text"
+        class="group-name-input"
+        bindinput="handleOnNameInput"
+        placeholder="圈子名称"
+        value="{{groupName}}"
+      ></wxc-input>
+    </view>
+    <view class="group-intro">
+      <textarea
+        type="text"
+        class="group-intro-input"
+        bindinput="handleOnIntroInput"
+        placeholder="圈子简介"
+        value="{{groupIntro}}"
+      ></textarea>
+    </view>
+    <view class="btn-wrap">
+      <wxc-button
+        plain="true"
+        size="normal"
+        type="success"
+        value="{{buttomText}}"
+        bind:click="handleOnCreate"
+        btn-style="border-width: 2rpx"
+        loading="{{loading}}"
+      >
+      </wxc-button>
+    </view>
+  </view>
+</template>
+
+<script>
+
+export default {
+  config: {
+    navigationBarTitleText: '圈子',
+    usingComponents: {
+      'wxc-cc': '@minui/wxc-cc',
+      'wxc-input': '@minui/wxc-input',
+      'wxc-button': '@minui/wxc-button',
+      'wxc-avatar': '@minui/wxc-avatar'
+    }
+  },
+  data: {
+    avatarUrl: '',
+    groupName: '',
+    groupIntro: '',
+    loading: false,
+    _id: undefined,
+    buttomText: '创建圈子'
+  },
+  onLoad (option) {
+    console.log(option)
+    const app = getApp();
+    if (option.id) {
+      const group = app.globalData.store.currentGroup
+      this.setData({
+        _id: option.id,
+        avatarUrl: group.avatarUrl,
+        groupName: group.nickName,
+        groupIntro: group.intro,
+        buttomText: '确认修改',
+      })
+    } else {
+      this.setData({
+        avatarUrl: app.globalData.store.user.avatarUrl,
+      })
+    }
+  },
+  onShow () {
+  },
+  handleOnNameInput (e) {
+    this.setData({
+      groupName: e.detail.value
+    })
+  },
+  handleOnIntroInput (e) {
+    this.setData({
+      groupIntro: e.detail.value
+    })
+  },
+  handleCreatSuccess () {
+    const app = getApp();
+    app.globalData.store.addGroup = true
+    this.setData({
+      loading: false,
+    })
+    wx.switchTab({
+      url: '/pages/group/index'
+    })
+  },
+  handleOnCreate () {
+    if (!this.data.avatarUrl) {
+      wx.showToast({ title: '请上传圈子头像', icon: 'none' })
+      return
+    }
+    if (!this.data.groupName) {
+      wx.showToast({ title: '请输入圈子名称', icon: 'none' })
+      return
+    }
+    if (!this.data.groupIntro) {
+      wx.showToast({ title: '请输入圈子简介', icon: 'none' })
+      return
+    }
+    this.setData({
+      loading: true,
+    })
+    let group = {}
+    const db = wx.cloud.database()
+    if (this.data.id) {
+      group = {
+        intro: this.data.groupIntro,
+        nickName: this.data.groupName,
+        avatarUrl: this.data.avatarUrl,
+      }
+      db.collection('groop').doc(this.data._id).update({
+        data: group
+      }).then(res => {
+        this.handleCreatSuccess()
+      })
+    } else {
+      const app = getApp()
+      group = {
+        nickName: this.data.groupName,
+        intro: this.data.groupIntro,
+        avatarUrl: this.data.avatarUrl,
+        creator: app.globalData.store.user._id,
+        members: [app.globalData.store.user._id],
+      }
+      db.collection('groop').add({
+        data: group
+      }).then(res => {
+        this.handleCreatSuccess()
+      })
+    }
+  },
+
+  upload2Cloud (file) {
+    wx.cloud.uploadFile({
+      // 指定上传到的云路径
+      cloudPath: `logo/${file.replace(/^.*\:\/\//, '')}`,
+      // 指定要上传的文件的小程序临时文件路径
+      filePath: file,
+      // 成功回调
+      success: res => {
+        if (res.errMsg === 'cloud.uploadFile:ok') {
+          this.setData({
+            avatarUrl: res.fileID,
+          })
+          wx.hideLoading()
+        }
+      },
+      fail: console.error,
+    })
+  },
+
+  onUploadImg() {
+    wx.chooseImage({
+      count: 1,
+      sourceType: ['album', 'camera'],
+      success: res => {
+        if(res.errMsg === 'chooseImage:ok') {
+          this.upload2Cloud(res.tempFilePaths[0])
+          // this.upload2Qiniu(res.tempFilePaths[0])
+        }
+      }
+    })
+  },
+
+  upload2qiniu () {
+    let that = this;
+    wx.chooseImage({
+      success: res => {
+        wx.showLoading({
+          title: '上传中...',
+        })
+        var tempFilePaths = res.tempFilePaths
+        tempFilePaths.forEach((file, index) => {
+          wx.uploadFile({
+            url: 'https://upload-z2.qiniup.com',
+            filePath: tempFilePaths[0],
+            name: 'file',
+            formData:{
+              'token': that.data.token,
+            },
+            success: function(res){
+              var data = JSON.parse(res.data)
+              that.setData({
+                avatarUrl: util.imgHost + data.key,
+              })
+              wx.hideLoading()
+            }
+          })
+        });
+      }
+    })
+  },
+}
+</script>
+
+<style lang="less">
+  .main-container {
+    padding: 30rpx;
+    .group-avatar-container {
+      .group-avatar-content {
+        .group-avatar {
+          width: 160rpx;
+          height: 160rpx;
+          border-radius: 100%;
+        }
+      }
+    }
+    .group-name, .group-intro {
+      margin-top: 50rpx;
+      .group-name-input {
+        text-align: center;
+      }
+       .group-intro-input {
+         box-sizing: border-box;
+         border: 2rpx solid #e8e8e8;
+         width: 100%;
+         padding: 10rpx;
+       }
+    }
+    .btn-wrap {
+      display: block;
+      margin-top: 100rpx;
+      text-align: center;
+    }
+  }
+</style>

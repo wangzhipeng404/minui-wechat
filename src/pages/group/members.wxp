@@ -1,0 +1,57 @@
+<template>
+  <view class="main-container">
+    <view wx:for="{{members}}" wx:key="{{item._id}}" class="member">
+      <list-item
+        title="{{item.nickName}}"
+        detail="{{item.city}}"
+        avatarUrl="{{item.avatarUrl}}"
+        style="border: none"
+      >
+      </list-item>
+    <view>
+  </view>
+
+</template>
+
+<script>
+export default {
+  config: {
+    navigationBarTitleText: '成员列表',
+    enablePullDownRefresh: true,
+    usingComponents: {
+      'list-item': '../component/chat/listItem'
+    }
+  },
+  data: {
+    members: [],
+  },
+  onShow () {
+    wx.startPullDownRefresh()
+  },
+  onPullDownRefresh () {
+    this.handleLoadUser()
+  },
+  handleLoadUser () {
+    const app = getApp()
+    wx.cloud.callFunction({
+      name: 'userFind',
+      data: {
+        ids: app.globalData.store.currentGroup.members,
+      }
+    }).then(res => {
+      this.setData({
+        members: [...res.result.data],
+      })
+      wx.stopPullDownRefresh()
+    })
+  },
+}
+</script>
+
+<style lang="less">
+  .main-container {
+    .member {
+      margin-top: 20rpx;
+    }
+  }
+</style>

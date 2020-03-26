@@ -3,13 +3,14 @@
     <image
       class="list-image"
       mode="aspectFill"
-      src="http://s3.mogucdn.com/mlcdn/1689c6/180330_8gak8gf7809jhfi8i0l90i79bca3g_400x400.jpg"
+      src="{{from.avatarUrl}}"
       >
     </image>
     <view class="item">
       <view class="msg-icon"></view>
       <view class="msg-content">
-      <text>{{title}}</text>
+        <image wx:if="{{type === 'img'}}" bindtap="handleImageClick" data-src="{{value}}" class="msg-img" src="{{value}}" mode="widthFix"></image>
+        <text wx:else>{{value}}</text>
       </view>
     </view>
     </wxc-list>
@@ -25,9 +26,17 @@ export default {
     }
   },
   properties: {
-    title: {
+    value: {
       value: '昵称',
       type: 'string',
+    },
+    type: {
+      value: 'text',
+      type: 'string',
+    },
+    from: {
+      value: {},
+      type: 'object'
     },
     detail: {
       value: null,
@@ -37,15 +46,23 @@ export default {
       value: false,
       type: 'boolean',
     },
+  },
+  methods: {
+    handleImageClick (e) {
+      wx.previewImage({
+        current: e.currentTarget.dataset.src,
+        urls: [e.currentTarget.dataset.src]
+      })
+    }
   }
 }
 </script>
 
-<style>
+<style lang="less">
 .list-check {
   display: flex;
-  align-items: center;
-  background: #fff;
+  align-items: top;
+  background: #e8e8e8;
   padding: 20rpx;
 }
 .check-wrap {
@@ -54,7 +71,7 @@ export default {
   height: 40rpx;
   margin-left: 30rpx;
   border-radius: 100%;
-  border: 1px solid #d8d8d8;
+  border: 1px solid #fff;
 }
 .check {
   position: absolute;
@@ -65,8 +82,8 @@ export default {
   line-height: 42rpx;
 }
 .list-image {
-  width: 80rpx;
-  height: 80rpx;
+  width: 60rpx;
+  height: 60rpx;
   margin-right: 10rpx;
 }
 .radius {
@@ -77,21 +94,33 @@ export default {
   position: relative;
 }
 .msg-content {
+  box-sizing: border-box;
   display: inline-block;
-  border: 1px solid #e8e8e8;
-  max-width: 50%;
+  border: 1px solid #fff;
+  max-width: 70%;
   padding: 10rpx 15rpx;
+  margin-left: 20rpx;
   border-radius: 10rpx;
-  background-color: #e8e8e8;
+  background-color: #fff;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  word-break: break-all;
+  .msg-img {
+    display: inline-block;
+    width: 300rpx;
+    max-width: 100%;
+  }
 }
 .msg-icon {
   width: 15rpx;
   height: 15rpx;
+  position: absolute;
+  top: 20rpx;
+  left: 14rpx;
   display: inline-block;
-  border-top: 1px solid #e8e8e8;
-  border-left: 1px solid #e8e8e8;
+  border-top: 1px solid #ffff;
+  border-left: 1px solid #ffff;
   transform: rotate(-45deg);
-  margin-right: -10rpx;
-  background-color: #e8e8e8;
+  background-color: #ffffff;
 }
 </style>

@@ -6,17 +6,17 @@
 </template>
 
 <script>
+  import store from './utils/store'
+
   export default {
     config: {
-      usingComponents: {
-        'layout-head': 'layout/head',
-      },
+      usingComponents: {},
       pages: [],
       window: {
         backgroundTextStyle: 'dark',
         backgroundColor: '#ffffff',
         navigationBarBackgroundColor: '#ffffff',
-        navigationBarTitleText: 'minui-demo',
+        navigationBarTitleText: 'groop',
         navigationBarTextStyle: 'black'
       },
       tabBar: {
@@ -24,27 +24,21 @@
         color: '#777',
         list: [
           {
-            pagePath: 'pages/home/index',
-            iconPath: './common/icon/chat-gray.png',
-            selectedIconPath: './common/icon/chat.png',
-            text: '首页'
+            pagePath: 'pages/group/index',
+            iconPath: './common/icon/group-work-gray.png',
+            selectedIconPath: './common/icon/group-work-green.png',
+            text: '圈子'
           },
           {
-            pagePath: 'pages/friend/index',
-            iconPath: './common/icon/chat-gray.png',
-            selectedIconPath: './common/icon/chat.png',
-            text: '通讯录'
-          },
-          {
-            pagePath: 'pages/discovery/index',
-            iconPath: './common/icon/chat-gray.png',
-            selectedIconPath: './common/icon/chat.png',
-            text: '发现'
+            pagePath: 'pages/timeLine/index',
+            iconPath: './common/icon/share-order-gray.png',
+            selectedIconPath: './common/icon/share-order-green.png',
+            text: '动态'
           },
           {
             pagePath: 'pages/self/index',
-            iconPath: './common/icon/chat-gray.png',
-            selectedIconPath: './common/icon/chat.png',
+            iconPath: './common/icon/user-gray.png',
+            selectedIconPath: './common/icon/user-green.png',
             text: '我'
           },
         ]
@@ -53,14 +47,28 @@
         request: 10000
       }
     },
-    globalData: { },
-    onLaunch () { },
-    onShow () { },
-    onHide () { }
+    globalData: {
+      store: store,
+    },
+    onLaunch () {
+      wx.cloud.init()
+      if (!this.globalData.store.user.nickName) {
+        wx.switchTab({
+          url: '/pages/group/index',
+        })
+      }
+    },
   }
 </script>
 
 <style>
+@import './common/style/weui.css';
+
+::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  color: transparent;
+}
 page {
   background-color: #ffffff;
   height: 100%;

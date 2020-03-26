@@ -1,0 +1,219 @@
+<template>
+  <view class="main-container">
+      <view wx:if="{{moment._id}}">
+        <moment-item
+          moment="{{moment}}"
+          momentIndex="{{1}}"
+          bind:clickImage="handleImageClicked"
+          page="detail"
+        >
+        </moment-item>
+      </view>
+      <view class="comment-list">
+        <view class="top-icon"></view>
+        <view class="comment-item" wx:for="{{comments}}" wx:key="{{index}}">
+          <text class="comment-nickname">{{item.creator.nickName}}:</text>
+          <text class="commnet-content">{{item.content.text}}</text>
+        </view>
+      <view>
+      <view class="input-wrap">
+        <input
+          type="text"
+          mode="wrapped"
+          class="comment-input"
+          bindinput="handleCommentInput"
+          bindconfirm="handleSendComment"
+          maxlength="{{-1}}"
+          auto-height="{{true}}"
+          cursor-spacing="{{20}}"
+          placeholder="我也说一句..."
+          confirm-type="发送"
+          value="{{inputText}}"
+        >
+        <view class="btn-wrap">
+          <wxc-button plain="{{true}}" size="small" type="secondary" value="发送" bind:click="handleSendComment" loading="{{sending}}"></wxc-button>
+        </view>
+      </view>
+  </view>
+</template>
+
+<script>
+import request from '../../utils/request';
+import util from '../../utils/util';
+
+export default {
+  config: {
+    navigationBarTitleText: '动态详情',
+    enablePullDownRefresh: false,
+    usingComponents: {
+      'wxc-button': '@minui/wxc-button',
+      'wxc-loadmore': '@minui/wxc-loadmore',
+      'moment-item': '../component/timeLine/momentItem.wxc',
+    }
+  },
+  data: {
+    isAll: false,
+    loading: false,
+    imgHost: util.imgHost,
+    moment: {},
+    isLoad: true,
+    inputText: '',
+    comments: [],
+    sending: false,
+    lastId: null,
+  },
+  onLoad () {
+    this.setData({
+      moment: getApp().globalData.store.currentMoment,
+    })
+    this.handleLoadData()
+  },
+  onReachBottom () {
+    if (!this.data.isAll) {
+      this.handleLoadData()
+    }
+  },
+  handleCommentInput (e) {
+    this.setData({
+      inputText: e.detail.value,
+    })
+  },
+  handleSendComment (e) {
+    if (this.data.inputText) {
+      if (this.data.sending) {
+        return
+      }
+      this.setData({
+        sending: true,
+      })
+      const app = getApp()
+      const db = wx.cloud.database()
+      const comment = {
+        creator: {
+            nickName: app.globalData.store.user.nickName,
+            _id: app.globalData.store.user._id,
+            avatarUrl: app.globalData.store.user.avatarUrl,
+          },
+          content: {
+            text: this.data.inputText,
+            images: [],
+          },
+          moment_id: this.data.moment._id,
+          create_time: new Date(),
+      }
+      db.collection('comment').add({
+        data: {
+          ...comment,
+        },
+      }).then(res => {
+        const moment = this.data.moment
+        db.collection('moment').doc(moment._id).update({
+          data: {
+            comment: db.command.inc(1),
+          }
+        })
+        this.setData({
+          comments: [...this.data.comments, comment],
+          inputText: '',
+          sending: false,
+          moment: {
+            ...moment,
+            comment: moment.comment + 1
+          },
+        })
+      })
+    }
+  },
+  handleLoadData (type) {
+    if (this.data.loading) {
+      return
+    }
+    this.setData({
+      loading: true,
+    })
+    const db = wx.cloud.database()
+    const _ = db.command
+    let query = {
+        moment_id: this.data.moment._id,
+    }
+    if (this.lastId) {
+      query._id = _.gt(lastId)
+    }
+    db.collection('comment').where({
+      ...query,
+    }).limit(20).get().then(res => {
+      console.log(res)
+      const data = res.data
+      this.setData({
+        comments: [...this.data.comments, ...data],
+        isAll: data.length < 20,
+        loading: false,
+        isLoad: false,
+      })
+      wx.stopPullDownRefresh()
+    })
+  },
+}
+</script>
+
+<style lang="less">
+  page {
+    background-color: #e8e8e8;
+    .main-container {
+      padding-bottom: 20rpx;
+      .comment-list {
+        position: relative;
+        top: -10rpx;
+        background-color: #e8e8e8;
+        padding: 20rpx;
+        padding-left: 107rpx;
+        .top-icon {
+          display: block;
+          width: 20rpx;
+          height: 20rpx;
+          position: absolute;
+          top: -10rpx;
+          left: 107rpx;
+          background-color: #e8e8e8;
+          transform: rotate(45deg)
+        }
+        .comment-item {
+          line-height: 1.6;
+          padding-bottom: 2rpx;
+          background-color: #e8e8e8;
+          .comment-nickname {
+            color: #3b7ba8;
+            font-weight: 600;
+            margin-right: 10rpx;
+            font-size: 28rpx;
+          }
+          .commnet-content {
+            color: #262626;
+            font-size: 28rpx;
+          }
+        }
+      }
+      .input-wrap {
+        box-sizing: border-box;
+        background: #fff;
+        padding: 20rpx;
+        position: fixed;
+        width: 100%;
+        left: 0;
+        bottom: 0;
+        display: flex;
+        .comment-input {
+          border-bottom: 2rpx solid #6c757d;
+          flex: 1;
+          padding: 8rpx 10rpx;
+        }
+        .btn-wrap {
+          width: 120rpx;
+          margin-left: 10rpx;
+          text-align: center;
+        }
+      }
+    }
+  }
+
+</style>

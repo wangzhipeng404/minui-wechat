@@ -1,7 +1,7 @@
 <template>
   <view class="main-container">
     <wxc-cc class="main-content">
-      <view hidden="{{loading}}">
+      <view>
         <view class="logo">
           peng
         </view>
@@ -19,18 +19,11 @@
         </view>
       </view>
     </wxc-cc>
-    <wxc-loading
-      is-show="{{loading}}"
-      image="https://s10.mogucdn.com/mlcdn/c45406/170607_5241335cb37ka3ab7781ddh504ggh_200x200.png"
-      slip="http://s10.mogucdn.com/p1/160715/upload_ifrgmmzwmyydknldhezdambqmeyde_200x200.png"
-    ></wxc-loading>
   </view>
 </template>
 
 <script>
 import request from '../../utils/request';
-import util from '../../utils/util'
-const io = require('weapp.socket.io')
 
 export default {
   config: {
@@ -38,57 +31,33 @@ export default {
     usingComponents: {
       'wxc-button': '@minui/wxc-button',
       'wxc-cc': '@minui/wxc-cc',
-      'wxc-loading': '@minui/wxc-loading',
     }
   },
-  data: {
-    loading: true,
-    openid: '',
-  },
+  data: {},
   onLoad () {
-    let that = this;
     const app = getApp();
     if (app.globalData.store.user.nickName) {
       wx.switchTab({
         url: '/pages/group/index'
       })
     }
+
     wx.cloud.callFunction({
       name: 'login',
-    }).then(res => {
-      console.log(res)
+      success: (res) => {
+        console.log(res)
+      },
+      complete: res => {
+        console.log('callFunction test result: ', res)
+      }
     })
   },
   getUserInfo (e) {
     if(e.detail.errMsg === 'getUserInfo:ok') {
-      this.setData({
-        loading: true,
-      })
-      let userInfo = e.detail.userInfo
-      request({
-        url: '/api/user/update',
-        data: userInfo,
-        cookie: getApp().globalData.store.cookie,
-      }).then(res => {
-        const app = getApp();
-        app.globalData.store.user = res.data
-        request({
-          url: '/api/group/find',
-          data: {},
-          cookie: getApp().globalData.store.cookie,
-        }).then(res => {
-          app.globalData.store.groups = res.data.list
-          console.log(getCurrentPages())
-          if (getCurrentPages() > 1) {
-            wx.navigateBack({
-              delat: 1,
-            })
-          } else {
-            wx.switchTab({
-              url: '/pages/group/index'
-            })
-          }
-        })
+      const app = getApp();
+      app.globalData.store.user = e.detail.userInfo
+      wx.switchTab({
+        url: '/pages/home/index'
       })
     }
   }

@@ -1,0 +1,254 @@
+<template>
+  <view>
+    <view class="chat-list">
+      <view
+        wx:for="{{groups}}"
+        wx:key="{{item._id}}"
+        hover-class="navigator-hover"
+      >
+        <movable-area
+        wx:key="{{item._id}}"
+          style="width: {{windowWidth + 80}}px;height: 130rpx; left: -80px;"
+        >
+          <movable-view
+            style="width: 100vw;"
+            x="{{moveX}}"
+            direction="horizontal"
+            out-of-bounds
+            damping={{20}}
+            friction="2"
+            class="movable-view"
+            wx:key="{{item._id}}"
+            inertia
+            animation="{{false}}"
+          >
+            <list-item
+              title="{{item.nickName}}"
+              detail="{{item.intro}}"
+              avatarUrl="{{item.avatarUrl}}"
+              bindtap="handleOnGroupClick"
+              wx:key="{{item._id}}"
+              data-index="{{index}}"
+            >
+            </list-item>
+          </movable-view>
+          <view class="leave-btn" data-index={{index}} bindtap="handleLeaveGroup" data-index="{{index}}">
+              退出
+            </view>
+        </movable-area>
+      </view>
+    </view>
+    <wxc-abnor
+      type="FOLLOW"
+      title="还没有圈子"
+      tip="赶快去创建自己的圈子吧"
+      wx:if="{{!loading && groups.length === 0}}"
+    ></wxc-abnor>
+    <view class="new-btn" animation="{{animation}}" bindtap="handleNewChat" bindlongpress="handleScanCode">
+      <wxc-icon size="50" type="add" class="new-icon" color="#fff"></wxc-icon>
+    </view>
+    <login-modal bind:login="handleLoginSuccess" wx:if="{{unlogin}}"></login-modal>
+  </view>
+</template>
+
+<script>
+export default {
+  config: {
+    navigationBarTitleText: '我的圈子',
+    enablePullDownRefresh: true,
+    usingComponents: {
+      'list-item': '../component/chat/listItem',
+      'wxc-icon': '@minui/wxc-icon',
+      'wxc-loading': '@minui/wxc-loading',
+      'wxc-loadmore': '@minui/wxc-loadmore',
+      'login-modal': '../component/login/login.wxc',
+      'wxc-abnor': '@minui/wxc-abnor',
+    }
+  },
+  data: {
+    groups: [],
+    animation: {},
+    unlogin: false,
+    option: {},
+    loading: true,
+    moveX: '100px',
+  },
+  onLoad (option) {
+    const app = getApp()
+    if (!app.globalData.store.user.nickName) {
+      wx.hideTabBar({})
+      this.setData({
+        unlogin: true,
+        option: option,
+      })
+    } else {
+      this.setData({
+        option: option,
+      }, () => {
+        this.handleLoginSuccess()
+      })
+    }
+    wx.getSystemInfo({
+      success: res => {
+        this.setData({
+          windowHeight: res.windowHeight,
+          windowWidth: res.windowWidth,
+        })
+      }
+    })
+  },
+  onShow () {
+    if (getApp().globalData.store.addGroup) {
+      wx.startPullDownRefresh()
+    }
+    getApp().globalData.store.addGroup = false
+  },
+  onPullDownRefresh () {
+    this.handleLoadGroup()
+  },
+
+  handleLoginSuccess () {
+    setTimeout(() => {
+      this.setData({
+        unlogin: false,
+      })
+    }, 1500);
+    wx.showTabBar()
+    wx.startPullDownRefresh()
+    this.handleLoadGroup()
+    const app = getApp()
+    if (app.globalData.store.shareJump && this.data.option.id) {
+      app.globalData.store.shareJump = false
+      wx.navigateTo({
+        url: `/pages/group/home?id=${this.data.option.id}`
+      })
+    }
+    var animation = wx.createAnimation({
+      transformOrigin: "50% 50%",
+      duration: 2000,
+      timingFunction: "linear",
+      delay: 1000,
+    })
+    animation.bottom('-150rpx').right('-150rpx').step();
+    this.setData({
+      animation: animation.export(),
+    }, () => {
+    })
+  },
+  handleLoadGroup () {
+    this.setData({
+      loading: true,
+    })
+    const app = getApp()
+    /* request({
+      url: '/api/group/find',
+      data: {},
+      cookie: app.globalData.store.cookie,
+    }) */
+    wx.cloud.callFunction({
+      name: 'groopFind',
+      data: {
+        uid: app.globalData.store.user._id,
+      }
+    }).then(({ result: { data } }) => {
+      app.globalData.store.groups = [...data]
+      app.globalData.store.group_ids = data.map(val => val._id)
+      this.setData({
+        groups: [...data],
+        loading: false,
+      })
+      wx.stopPullDownRefresh()
+    }).catch((e) => {
+      console.log(e)
+      this.setData({
+        groups: [],
+        loading: false,
+      })
+      wx.stopPullDownRefresh()
+    })
+  },
+  handleNewChat () {
+    wx.navigateTo({
+      url: '/pages/group/new'
+    })
+  },
+  handleOnGroupClick (e) {
+    const index = e.currentTarget.dataset.index
+    getApp().globalData.store.currentGroup = this.data.groups[index]
+    wx.navigateTo({
+      url: `/pages/group/home?id=${this.data.groups[index]._id}`
+    })
+  },
+  handleScanCode (e) {
+    wx.scanCode({
+      success: (res) => {
+        console.log(res)
+      }
+    })
+  },
+  handleLeaveGroup (e) {
+    const index = e.currentTarget.dataset.index
+    const app = getApp()
+     wx.showModal({
+      title: `确定退出圈子${this.data.groups[index].nickName}吗`,
+      content: `退出后将无法查看圈子动态`,
+      success: () => {
+        this.setData({
+          moveX: '100px',
+        })
+        wx.showLoading({
+          title: "正在退出",
+        })
+        wx.cloud.callFunction({
+          name: 'groopLeave',
+          data: {
+            user_id: app.globalData.store.user._id,
+            groop_id: this.data.groups[index]._id,
+          }
+        }).then(res => {
+          wx.hideLoading()
+          this.data.groups.splice(index, 1)
+          this.setData({
+            groups: this.data.groups,
+          })
+        })
+      }
+    })
+  }
+}
+</script>
+
+<style lang="less">
+.movable-view {
+  z-index: 3;
+}
+.leave-btn {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 1;
+  width: 160rpx;
+  line-height: 126rpx;
+  font-size: 40rpx;
+  text-align: center;
+  color: #fff;
+  background-color: #f5222d;
+}
+.new-btn {
+  display: block;
+  position: fixed;
+  bottom: -300rpx;
+  right: -300rpx;
+  background-color: #13c2c2;
+  height: 300rpx;
+  width: 300rpx;
+  border-radius: 100%;
+  z-index: 9;
+  .new-icon {
+    color: #fff;
+    position: absolute;
+    top: 55rpx;
+    left: 75rpx;
+  }
+}
+</style>

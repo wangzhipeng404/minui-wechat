@@ -1,0 +1,154 @@
+<template>
+  <view class="swiper-container">
+    <swiper
+      class="image-swiper"
+      indicator-dots="{{indicatorDots}}"
+      indicator-color="{{indicatorColor}}"
+      indicator-active-color="{{indicatorActiveColor}}"
+      autoplay="{{autoplay}}"
+      interval="{{interval}}"
+      duration="{{duration}}"
+      current="{{swipperCurrent}}"
+    >
+      <block wx:for="{{imgUrls}}" wx:key="index">
+        <swiper-item>
+          <movable-area
+            style="display: block; height: 100%; width: 100%; background: rgba(0, 0, 0, {{imageMovable.movabelAreaOpacity}});"
+          >
+            <movable-view
+              style="height: 100%; width: 100%;"
+              direction="vertical"
+              damping="0"
+              friction="0"
+              scale-min="0.1"
+              scale="false"
+              x={{imageMovable.x}}
+              y={{imageMovable.y}}
+              out-of-bounds="{{true}}"
+              animation="{{false}}"
+              scale-value={{imageMovable.scaleValue}}
+              bindchange="handleSlideImageDropDown"
+              vtouchmove="handleOnImageMove"
+            >
+              <view class="slide-image-wrap">
+                <image
+                  src="{{imgHost + item}}"
+                  class="slide-image"
+                  mode="widthFix"
+                  bindtap="handleOnHideSlideImage"
+                />
+              <view>
+            </movable-view>
+          </movable-area>
+        </swiper-item>
+      </block>
+    </swiper>
+  </view>
+</template>
+
+<script>
+import util from '../../../utils/util';
+export default {
+  config: {
+
+  },
+  data: {
+    imgHost: util.imgHost,
+    indicatorDots: true,
+    indicatorColor: 'rgba(255, 255, 255, 0.5)',
+    indicatorActiveColor: '#fff',
+    autoplay: false,
+    interval: 5000,
+    duration: 1000,
+    imageMovable: {
+      x: 0,
+      y: 0,
+      scaleValue: 1,
+      movabelAreaOpacity: 1
+    },
+    windowHeight: 500,
+    windowWidth: 500,
+  },
+  properties: {
+    show: {
+      value: false,
+      type: 'boolean',
+    },
+    imgUrls: {
+      value: [],
+      type: 'array',
+    },
+    swipperCurrent: {
+      value: 0,
+      type: 'number',
+    }
+  },
+  onLoad () {
+    wx.getSystemInfo({
+      success: res => {
+        this.setData({
+          windowHeight: res.windowHeight,
+          windowWidth: res.windowWidth,
+        })
+      }
+    })
+  },
+  methods: {
+    handleSlideImageDropDown (e) {
+      if (e.detail.source !== '') {
+        if(this.imageTimer) {
+          clearTimeout(this.imageTimer)
+        }
+        const percent =  e.detail.y / this.data.windowHeight
+        const x = this.data.windowWidth * percent / 2 * (1.3 -percent)
+        this.setData({
+          imageMovable: {
+            y: e.detail.y,
+            x: x,
+            scale: 1 - percent,
+            movabelAreaOpacity: 1 - percent
+          }
+        })
+        if (e.detail.y > 50) {
+          this.imageTimer = setTimeout(() => {
+            this.triggerEvent('hide')
+          }, 100);
+        }
+      }
+    },
+     handleOnHideSlideImage () {
+      this.triggerEvent('hide')
+    }
+  },
+}
+</script>
+
+<style lang="less">
+.swiper-container {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 999;
+  width: 100%;
+  height: 100%;
+  .image-swiper {
+    width: 100%;
+    height: 100%;
+    swiper-item {
+      .slide-image-wrap {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        .slide-image {
+          width: 100%;
+        }
+      }
+    }
+  }
+}
+</style>
+
+

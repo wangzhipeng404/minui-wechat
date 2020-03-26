@@ -1,15 +1,20 @@
 <template>
   <view class="list-check">
-    <view class="item">
-      <text class="msg-content">{{title}}</text>
-      <view class="msg-icon"></view>
-    </view>
-    <image
-      class="list-image"
-      mode="aspectFill"
-      src="http://s3.mogucdn.com/mlcdn/1689c6/180330_8gak8gf7809jhfi8i0l90i79bca3g_400x400.jpg"
+    <view class="msg-wrap">
+      <view class="item">
+        <view class="msg-content">
+          <image wx:if="{{type === 'img'}}" bindtap="handleImageClick" data-src="{{value}}" class="msg-img" src="{{value}}" mode="widthFix"></image>
+          <text wx:else>{{value}}</text>
+        </view>
+        <view class="msg-icon"></view>
+      </view>
+      <image
+        class="list-image"
+        mode="aspectFill"
+        src="{{avatar}}"
       >
-    </image>
+      </image>
+    <view>
   </view>
 </template>
 
@@ -22,8 +27,12 @@ export default {
     }
   },
   properties: {
-    title: {
+    value: {
       value: '昵称',
+      type: 'string',
+    },
+    type: {
+      value: 'text',
       type: 'string',
     },
     detail: {
@@ -34,36 +43,38 @@ export default {
       value: false,
       type: 'boolean',
     },
+    avatar: {
+      value: '',
+      type: 'string',
+    }
+  },
+  methods: {
+    handleImageClick (e) {
+      wx.previewImage({
+        current: e.currentTarget.dataset.src,
+        urls: [e.currentTarget.dataset.src]
+      })
+    }
   }
 }
 </script>
 
-<style>
+<style lang="less">
 .list-check {
-    display: flex;
-    align-items: center;
-    background: #fff;
-    padding: 20rpx;
-}
-.check-wrap {
-  position: relative;
-  width: 40rpx;
-  height: 40rpx;
-  margin-left: 30rpx;
-  border-radius: 100%;
-  border: 1px solid #d8d8d8;
-}
-.check {
-  position: absolute;
-  top: 0;
-  left: -2rpx;
+  box-sizing: border-box;
+  background: #e8e8e8;
+  padding: 20rpx;
   width: 100%;
-  height: 100%;
-  line-height: 42rpx;
+}
+.msg-wrap {
+  width: 100%;
+  display: flex;
+  align-items: top;
 }
 .list-image {
-  width: 80rpx;
-  height: 80rpx;
+  display: block;
+  width: 60rpx;
+  height: 60rpx;
   margin-left: 20rpx;
 }
 .radius {
@@ -71,14 +82,26 @@ export default {
 }
 .item {
   flex: 1;
-  text-align: right;
+  display: flex;
+  justify-content: flex-end;
+  position: relative;
 }
 .msg-content {
+  box-sizing: border-box;
+  display: inline-block;
   border: 1px solid #95de64;
-  max-width: 50%;
+  max-width: 70%;
   padding: 10rpx 15rpx;
   border-radius: 10rpx;
   background-color: #95de64;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  word-break: break-all;
+  .msg-img {
+    width: 300rpx;
+    display: inline-block;
+    max-width: 100%;
+  }
 }
 .msg-icon {
   width: 15rpx;
@@ -87,7 +110,9 @@ export default {
   border-top: 1px solid #95de64;
   border-right: 1px solid #95de64;
   transform: rotate(45deg);
-  margin-left: -10rpx;
+  position: absolute;
+  top: 20rpx;
+  right: -4rpx;
   background-color: #95de64;
 }
 </style>

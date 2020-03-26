@@ -1,0 +1,274 @@
+<template>
+  <view class="main-container">
+    <view class="input-wrap">
+      <textarea
+        placeholder="说点什么吧"
+        name="textarea"
+        bindinput="handleOnTextareaChange"
+        class="textarea"
+      />
+    </view>
+    <view class="message-images">
+      <cells>
+        <cell>
+          <uploader
+            bindfail="uploadError"
+            bindsuccess="uploadSuccess"
+            select="{{selectFile}}"
+            upload="{{uplaodFile}}"
+            files="{{files}}"
+            max-count="9"
+            title="图片上传"
+            tips="最多上传9张"
+            delete="{{true}}"
+            binddelete="handleDeleteImage"
+          >
+          </uploader>
+        </cell>
+      </cells>
+    </view>
+      <view class="button-wrap">
+        <wxc-button
+          plain="{{true}}"
+          size="normal"
+          type="success"
+          value="发表"
+          btn-style="border-width: 2rpx"
+          bind:click="handleOnPost"
+          loading="{{loading}}"
+        >
+        </wxc-button>
+      </view>
+  </view>
+</template>
+
+<script>
+
+  export default {
+    config: {
+      navigationBarTitleText: '发表',
+      usingComponents: {
+        'wxc-flex': '@minui/wxc-flex',
+        'wxc-button': '@minui/wxc-button',
+        'wxc-icon': '@minui/wxc-icon',
+        'uploader': '../component//uploader/uploader',
+        'cells': '../component//cells/cells',
+        'cell': '../component//cells/cell',
+      }
+    },
+    data: {
+      textContent: '',
+      imgUrls: [],
+      loading: false,
+      files: [],
+    },
+    onLoad(option) {
+      this.setData({
+        groupId: option.id,
+        groupNickname: option.nickName,
+        selectFile: this.selectFile.bind(this),
+        uplaodFile: this.uplaodFile.bind(this)
+      })
+      wx.getSystemInfo({
+        success: res => {
+          this.setData({
+            windowHeight: res.windowHeight,
+            windowWidth: res.windowWidth,
+          })
+        }
+      })
+
+    },
+
+    upload2Cloud(file) {
+      return wx.cloud.uploadFile({
+          // 指定上传到的云路径
+          cloudPath: `pictrue/${file.replace(/^.*\:\/\//, '')}`,
+          // 指定要上传的文件的小程序临时文件路径
+          filePath: file,
+        }).then((res) => res.fileID)
+    },
+
+    onUploadImg() {
+      wx.chooseImage({
+        sizeType: ['original', 'compressed'],
+        sourceType: ['album', 'camera'],
+        success: res => {
+          if (res.errMsg === 'chooseImage:ok') {
+            this.upload2Cloud(res.tempFilePaths[0])
+          }
+        }
+      })
+    },
+
+    handleUploadImage() {
+      let that = this;
+      wx.chooseImage({
+        success: res => {
+          wx.showLoading({
+            title: '上传中...',
+          })
+          var tempFilePaths = res.tempFilePaths
+          const temparr = tempFilePaths.map(val => {
+            return 'picture.png'
+          })
+          that.setData({
+            imgUrls: temparr
+          })
+          let count = 0;
+          tempFilePaths.forEach((file, index) => {
+            wx.uploadFile({
+              url: 'https://upload-z2.qiniup.com',
+              filePath: file,
+              name: 'file',
+              formData: {
+                'token': that.data.token,
+              },
+              success: function (res) {
+                var data = JSON.parse(res.data)
+                that.data.imgUrls[index] = data.key
+                that.setData({
+                  imgUrls: that.data.imgUrls,
+                })
+                if (count < tempFilePaths.length - 1) {
+                  count++
+                } else {
+                  wx.hideLoading()
+                }
+                //do something
+              }
+            })
+          });
+        }
+      })
+    },
+    handleOnTextareaChange(e) {
+      this.setData({
+        textContent: e.detail.value
+      })
+    },
+    handleDeleteImage(e) {
+      let swipperCurrent = e.detail.index;
+      let url = e.detail.item.url;
+      let imgUrls = this.data.imgUrls;
+      wx.cloud.deleteFile({
+        fileList: [url],
+      }).then(res => {
+        imgUrls.splice(swipperCurrent, 1)
+        this.setData({
+          imgUrls: imgUrls,
+        })
+        wx.showToast({
+          icon: 'none',
+          title: '删除成功',
+        })
+      })
+    },
+    handleOnPost() {
+      if (!this.data.textContent && !this.data.imgUrls.length > 0) {
+        wx.showToast({ title: '请输入内容或者上传图片', icon: 'none' })
+        return
+      }
+      if (this.data.loading) {
+        return
+      }
+      this.setData({
+        loading: true,
+      })
+      const app = getApp()
+      const moment = {
+        create_time: new Date(),
+        images: this.data.imgUrls,
+        content: this.data.textContent,
+        group: {
+          _id: this.data.groupId,
+          nickName: this.data.groupNickname
+        },
+        creator: {
+          nickName: app.globalData.store.user.nickName,
+          _id: app.globalData.store.user._id,
+          avatarUrl: app.globalData.store.user.avatarUrl,
+        },
+        comment: 0,
+      }
+      const db = wx.cloud.database()
+      db.collection('moment').add({
+        data: moment
+      }).then(res => {
+        this.setData({
+          loading: false,
+        })
+        app.globalData.store.postMoment = true
+        wx.showToast({
+          title: '发表成功',
+          icon: 'success',
+          success: () => {
+            wx.navigateBack()
+          }
+        })
+      })
+    },
+    chooseImage: function (e) {
+      var that = this;
+      wx.chooseImage({
+        sizeType: ['original', 'compressed'], // 可以指定是原图还是压缩图，默认二者都有
+        sourceType: ['album', 'camera'], // 可以指定来源是相册还是相机，默认二者都有
+        success: function (res) {
+          // 返回选定照片的本地文件路径列表，tempFilePath可以作为img标签的src属性显示图片
+          that.setData({
+            files: that.data.files.concat(res.tempFilePaths)
+          });
+        }
+      })
+    },
+    previewImage: function (e) {
+      wx.previewImage({
+        current: e.currentTarget.id, // 当前显示图片的http链接
+        urls: this.data.files // 需要预览的图片http链接列表
+      })
+    },
+    selectFile(files) {
+      // console.log('files', files)
+      // 返回false可以阻止某次文件上传
+    },
+    uplaodFile(files) {
+      console.log('upload files', files)
+      // 文件上传的函数，返回一个promise
+      return Promise.all(files.tempFilePaths.map(file => {
+        return this.upload2Cloud(file)
+      })).then(res => {
+        return({
+          urls: res
+        })
+      })
+    },
+    uploadError(e) {
+      console.log('upload error', e.detail)
+    },
+    uploadSuccess(e) {
+      // console.log('upload success', e.detail)
+      this.setData({
+        imgUrls: [...this.data.imgUrls, ...e.detail.urls]
+      })
+    }
+  }
+</script>
+
+<style lang="less">
+  .main-container {
+    padding: 30rpx;
+    .input-wrap {
+      .textarea {
+        width: 100%;
+      }
+    }
+    .message-images {
+      margin-top: 10rpx;
+    }
+    .button-wrap {
+      margin-top: 100rpx;
+      text-align: center;
+    }
+  }
+
+</style>

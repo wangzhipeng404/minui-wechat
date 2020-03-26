@@ -5,7 +5,10 @@
         class="item"
         icon="help"
         icon-color="#69A0DD"
-        title="朋友圈"></wxc-list>
+        title="朋友圈"
+        bind:click="goTimeLine"
+      >
+      </wxc-list>
     </view>
 
     <view class="list-item">
@@ -86,6 +89,11 @@ export default {
   },
   data: {
   },
+  goTimeLine () {
+    wx.navigateTo({
+      url: '/pages/timeLine/index'
+    })
+  }
 }
 </script>
 

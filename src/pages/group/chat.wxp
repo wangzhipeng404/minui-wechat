@@ -1,0 +1,291 @@
+<template>
+  <view class="chat-container">
+    <wxc-notice
+      notice="{{noticeText}}"
+      isShow="{{showNoctice}}"
+      scroll="true"
+      color="#ff5777"
+      bgColor="#ffe8ee"
+    >
+    </wxc-notice>
+    <scroll-view
+      scroll-y="{{true}}"
+      scroll-into-view="{{scrollElId}}"
+      scroll-with-animation="{{false}}"
+      style="height: {{windowHeight}}px"
+    >
+      <view class="chat-list" wx:for="{{messages}}" wx:key="index" id="msg{{index + 1}}">
+        <self-msg value="{{item.value}}" type="{{item.type}}" avatar="{{user.avatarUrl}}" wx:if="{{item.from === 'self'}}" ></self-msg>
+        <friend-msg wx:else value="{{item.value}}" type="{{item.type}}" from="{{item.from}}"></friend-msg>
+      </view>
+      <view class="scroll-bottom" id="scroll-bottom"></view>
+    </scroll-view>
+    <view class="input-container">
+      <input
+        type="text"
+        placeholder=""
+        mode="wrapped"
+        class="msg-input"
+        bindinput="handleInput"
+        bindconfirm="handleSendMessage"
+        maxlength="{{-1}}"
+        auto-height="{{true}}"
+        cursor-spacing="{{20}}"
+        confirm-type="发送"
+        value="{{inputText}}"
+      >
+      </input>
+      <view class="pic-btn">
+          <wxc-button
+            wx:if="{{inputText}}"
+            plain="{{true}}"
+            size="small"
+            type="secondary"
+            value="发送"
+            bind:click="handleSendMessage"
+          >
+          </wxc-button>
+          <wxc-icon size="50" color="#6c757d" type="camera" wx:else bindtap="handleSendImage"></wxc-icon>
+      </view>
+    </view>
+  </view>
+</template>
+
+<script>
+import util from '../../utils/util';
+import request from '../../utils/request';
+
+export default {
+  config: {
+    navigationBarTitleText: '聊天',
+    usingComponents: {
+      'self-msg': '../component/chat/selfMessage',
+      'friend-msg': '../component/chat/friendMessage',
+      'wxc-input': '@minui/wxc-input',
+      'wxc-button': '@minui/wxc-button',
+      'wxc-notice': '@minui/wxc-notice',
+      'wxc-icon': '@minui/wxc-icon',
+    }
+  },
+  data: {
+    groupId: '',
+    messages: [],
+    inputText: '',
+    inputFocus: false,
+    windowHeight: 500,
+    scrollElId: 'scroll-bottom',
+    noticeText: '',
+    showNoctice: false,
+    user: {},
+  },
+  onLoad: function (option) {
+    const app = getApp();
+    wx.setNavigationBarTitle({ title: option.nickName })
+    this.setData({
+      groupId: option.id,
+      user: app.globalData.store.user,
+    }, () => {
+      // this.handleJoinRoom()
+    })
+    const info = wx.getSystemInfo({
+      success: res => {
+        this.setData({
+          windowHeight: res.windowHeight - 60,
+        })
+      }
+    })
+  },
+  onShow () {
+  },
+  onUnload () {
+    // getApp().groupSocket.emit('leave', this.data.groupId)
+  },
+  handleJoinRoom () {
+    const app = getApp()
+    if (!app.groupSocket) {
+      return
+    }
+    app.groupSocket.emit('join', this.data.groupId)
+    app.groupSocket.on('leave success', msg => {
+      console.log(msg)
+    })
+    app.groupSocket.on('room notify' + this.data.groupId, msg => {
+      console.log(msg)
+      this.setData({
+        noticeText: msg,
+        showNoctice: true,
+      })
+      setTimeout(() => {
+        this.setData({
+          showNoctice: false,
+        })
+      }, 5000);
+    })
+    app.groupSocket.on('chat' + this.data.groupId, msg => {
+      wx.vibrateLong()
+      msg.from.avatarUrl = msg.from.avatarUrl.replace('http://pbmtf3or1.bkt.clouddn.com', util.imgHost)
+      this.data.messages.push({
+        from: msg.from,
+        type: msg.type,
+        value: msg.value
+      })
+      this.setData({
+        messages: this.data.messages,
+      }, () => {
+        this.setData({
+          scrollElId: 'scroll-bottom'
+        })
+      })
+    })
+  },
+  handleInput (e) {
+    this.setData({
+      inputText: e.detail.value,
+    })
+  },
+  handleSendMessage: function (e) {
+    const inputText = this.data.inputText;
+    this.setData({
+      messages: [ ...this.data.messages, {
+        from: 'self',
+        type: 'text',
+        value: inputText,
+      }],
+      inputText: '',
+    }, () => {
+      this.setData({
+        scrollElId: 'scroll-bottom'
+      })
+      this.handleChatToGroop(inputText)
+      /* if (getApp().groupSocket) {
+        getApp().groupSocket.emit('chat', {
+          roomName: this.data.groupId,
+          type: 'text',
+          value: inputText,
+        })
+      } else {
+        this.handleChatToGroop(inputText)
+      } */
+    })
+  },
+  handleChatToGroop (text) {
+    wx.cloud.callFunction({
+      name: 'qingyunke',
+      data: {
+        text: text
+      },
+      cookie: getApp().globalData.store.cookie,
+    }).then(res => {
+      const msg = res.result
+      this.data.messages.push({
+        ...msg
+      })
+      this.setData({
+        messages: this.data.messages,
+      }, () => {
+        this.setData({
+          scrollElId: 'scroll-bottom'
+        })
+      })
+      wx.vibrateLong()
+    }).catch(() => {
+      this.data.messages.push({
+        type: 'text',
+        value: '我反应不过来了',
+        from: {
+          nickName: 'groop',
+          _id: 'groop',
+          avatarUrl: 'cloud://groop-b2n3f.6772-groop-b2n3f-1301541600/icon/groop_logo.png'
+        }
+      })
+      this.setData({
+        messages: this.data.messages,
+      }, () => {
+        this.setData({
+          scrollElId: 'scroll-bottom'
+        })
+      })
+      wx.vibrateLong()
+    })
+  },
+  handleSendImage () {
+    wx.chooseImage({
+      success: res => {
+        var tempFilePaths = res.tempFilePaths
+        const temparr = tempFilePaths.map(val => {
+          return {
+            from: 'self',
+            type: 'img',
+            value: val,
+          }
+        })
+        this.setData({
+          messages: [ ...this.data.messages, ...temparr],
+        })
+        /* tempFilePaths.forEach((file, index) => {
+          wx.uploadFile({
+            url: 'https://upload-z2.qiniup.com',
+            filePath: file,
+            name: 'file',
+            formData:{
+              'token': this.data.token,
+            },
+            success: res => {
+              var data = JSON.parse(res.data)
+              getApp().groupSocket.emit('chat', {
+                roomName: this.data.groupId,
+                type: 'img',
+                value: util.imgHost + data.key,
+              })
+              //do something
+            }
+          })
+        }); */
+      }
+    })
+  },
+}
+</script>
+
+<style>
+::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  color: transparent;
+}
+.chat-container {
+  padding-bottom: 100px;
+  background-color: #e8e8e8;
+}
+.input-container {
+  box-sizing: border-box;
+  position: fixed;
+  width: 100%;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  border-top: 2rpx solid #d9d9d9;
+  background-color: #f5f5f5;
+  z-index: 9;
+  padding: 16rpx;
+  padding-right: 0;
+}
+.msg-input {
+  flex: 1;
+  box-sizing: border-box;
+  margin-top: -1px;
+  height: 60rpx;
+  padding: 0 10rpx;
+  background-color: #fff;
+  line-height: 60rpx;
+  border-bottom: 2rpx solid #6c757d;
+}
+.pic-btn {
+  width: 120rpx;
+  text-align: center;
+}
+.scroll-bottom {
+  margin-top: 50px;
+}
+</style>

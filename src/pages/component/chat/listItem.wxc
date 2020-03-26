@@ -3,17 +3,13 @@
     <image
       class="list-image"
       mode="aspectFill"
-      src="http://s3.mogucdn.com/mlcdn/1689c6/180330_8gak8gf7809jhfi8i0l90i79bca3g_400x400.jpg"
+      src="{{avatarUrl}}"
       >
     </image>
-    <wxc-list
-      class="item"
-      title="{{title}}"
-      detail="{{detail}}"
-      mode="none"
-      arrow="{{arrow}}"
-    >
-    </wxc-list>
+    <view class="item">
+      <view class="nickname">{{title}}</view>
+      <view class="intro">{{detail}}</view>
+    </view>
   </view>
 </template>
 
@@ -38,16 +34,21 @@ export default {
       value: false,
       type: 'boolean',
     },
+    avatarUrl: {
+      value: '',
+      type: String,
+    }
   }
 }
 </script>
 
 <style>
 .list-check {
-    display: flex;
-    align-items: center;
-    background: #fff;
-    border-bottom: 1px solid #ececec;
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border-bottom: 2rpx solid #ececec;
+  width: 100vw;
 }
 .check-wrap {
   position: relative;
@@ -74,7 +75,21 @@ export default {
   border-radius: 100px;
 }
 .item {
+  box-sizing: border-box;
   flex: 1;
+  padding: 20rpx;
+  line-height: 1.5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.item .intro {
+  box-sizing: border-box;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 28rpx;
+  color: #bfbfbf;
 }
 .list-image {
   width: 102rpx;

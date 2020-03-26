@@ -1,0 +1,171 @@
+<template>
+  <view class="main-container">
+    <wxc-flex class="wrap">
+      <view class="item side">
+        <image
+          class="user-avatar"
+          mode="aspectFill"
+          src="{{moment.creator.avatarUrl}}"
+          lazy-load="true"
+        />
+      </view>
+      <view class="item main">
+        <view class="user-name">{{moment.creator.nickName}}</view>
+        <view class="message-body">
+          <view class="message-text">{{moment.content}}</view>
+          <view class="message-images" wx:if="moment.images">
+            <wxc-flex class="images-wrap" cross="top" wrap="wrap" main="left">
+              <image
+                class="image-item"
+                wx:for="{{moment.images}}"
+                wx:key="{{index}}"
+                wx:for-item="img"
+                bindtap="handleImageClicked"
+                data-index="{{index}}"
+                src="{{img}}"
+                model="aspectFill"
+              >
+            </image>
+            </wxc-flex>
+          </view>
+        </view>
+        <view class="message-footer">
+          <view class="message-reffer">
+            <text>来自圈子 {{moment.group&&moment.group.nickName}}</text>
+          </view>
+          <view class="message-comment" bindtap="handleMomentClick">
+            <text class="message-time">{{moment.before}}前</text>
+            <view class="comment-box">
+              <wxc-icon size="30" type="comment" color="#8c8c8c"></wxc-icon>
+              <text class="comment-num">{{moment.comment}}<text>
+            <view>
+          </view>
+        </view>
+      </view>
+    </wxc-flex>
+  </view>
+</template>
+
+<script>
+export default {
+  config: {
+    usingComponents: {
+      'wxc-flex': '@minui/wxc-flex',
+      'wxc-icon': '@minui/wxc-icon',
+    }
+  },
+  data: {},
+  properties: {
+    moment: {
+      value: {},
+      type: 'arrary',
+    },
+    momentIndex: {
+      value: 0,
+      type: 'number'
+    },
+    page: {
+      value: 'list',
+      type: 'string'
+    }
+  },
+  methods: {
+    handleImageClicked (e) {
+      wx.previewImage({
+        current: this.properties.moment.images[e.currentTarget.dataset.index],
+        urls: this.properties.moment.images
+      })
+      this.triggerEvent('clickImage')
+    },
+    handleMomentClick (e) {
+      if (this.properties.page === 'list') {
+        getApp().globalData.store.currentMoment = this.properties.moment
+        wx.navigateTo({
+          url: `/pages/timeLine/detail?id=${this.properties.moment._id}`
+        })
+      }
+    }
+  }
+}
+</script>
+
+<style lang="less">
+  .main-container {
+    .wrap {
+      display: block;
+      box-sizing: border-box;
+      background: #fff;
+      border-bottom: 2rpx solid #e6e6e6;
+      padding: 20rpx;
+      .side {
+        width: 80rpx;
+        background: #fff;
+        flex-grow: 0;
+        .user-avatar {
+          width: 80rpx;
+          height: 80rpx;
+        }
+      }
+      .main {
+        background: #fff;
+        flex-grow: 1;
+        padding-left: 20rpx;
+        .user-name {
+          font-size: 32rpx;
+          font-weight: 600;
+          color: #3b7ba8;
+        }
+        .message-body {
+          line-height: 1.4;
+          .message-text {
+            font-size: 32rpx;
+            color: #000;
+            white-space: wrap;
+            word-break: break-all;
+          }
+          .message-images {
+            margin-top: 10rpx;
+            .images-wrap {
+              display: block;
+            }
+            .image-item {
+              box-sizing: border-box;
+              width: 96px;
+              height: 96px;
+              margin: 2px;
+              flex-grow: 0;
+            }
+          }
+        }
+        .message-footer {
+          margin-top: 10rpx;
+          .message-reffer {
+            font-size: 20rpx;
+            color:#1e639c;
+            .message-time {
+              margin-right: 10rpx;
+            }
+          }
+          .message-comment {
+            display: flex;
+            justify-content: space-between;
+            font-size: 26rpx;
+            padding: 6rpx 0;
+            color: #8c8c8c;
+            .comment-box {
+              .comment-num {
+                margin-left: 6rpx;
+                font-size: 26rpx;
+                color: #1e639c;
+                position: relative;
+                top: -4rpx;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+</style>
+
+

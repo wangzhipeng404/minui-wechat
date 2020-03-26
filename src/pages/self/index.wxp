@@ -1,47 +1,21 @@
 <template>
-  <view class="list-wrap">
-    <view class="list-item">
-      <list-item
-        class="item"
-        title="昵称"
-        detail="微信号：qwewrex"
-        arrow={{true}}
-        ></list-item>
+  <view>
+    <view class="list-wrap">
+      <view class="list-item">
+        <list-item
+          class="item"
+          title="{{user.nickName}}"
+          detail="{{user.city}}"
+          arrow={{true}}
+          avatarUrl="{{user.avatarUrl}}"
+          ></list-item>
+      </view>
     </view>
-
-    <view class="list-item">
-      <wxc-list
-        class="item"
-        icon="help"
-        icon-color="#69A0DD"
-        title="收藏"></wxc-list>
-      <wxc-list
-        class="item"
-        icon="feedback"
-        icon-color="#69A0DD"
-        mode="none"
-        title="相册"></wxc-list>
-        <wxc-list
-        class="item"
-        icon="help"
-        icon-color="#69A0DD"
-        title="卡包"></wxc-list>
-      <wxc-list
-        class="item"
-        icon="feedback"
-        icon-color="#69A0DD"
-        mode="none"
-        title="表情"></wxc-list>
-    </view>
-
-    <view class="list-item">
-      <wxc-list
-        class="item"
-        icon="help"
-        icon-color="#69A0DD"
-        title="钱包"></wxc-list>
-    </view>
+    <wxc-panel title="消息动态">
+      <wxc-loadmore is-end="{{true}}" icon="{{true}}"></wxc-loadmore>
+    </wxc-panel>
   </view>
+
 </template>
 
 <script>
@@ -51,11 +25,19 @@ export default {
     usingComponents: {
       'list-item': '../component/chat/listItem',
       'wxc-list': '@minui/wxc-list',
+      'wxc-panel': '@minui/wxc-panel',
+      'wxc-loadmore': '@minui/wxc-loadmore',
       'wxc-icon': '@minui/wxc-icon',
     }
   },
   data: {
+    user: {},
   },
+  onLoad () {
+    this.setData({
+      user: getApp().globalData.store.user
+    })
+  }
 }
 </script>
 
@@ -68,7 +50,6 @@ export default {
   }
   .list-item {
     background: #fff;
-    margin-bottom: 30rpx;
   }
   .list-item:last-child {
     margin: 0;
